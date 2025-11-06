@@ -1,5 +1,14 @@
 <template>
-  <div class="min-h-screen flex flex-col items-center p-4 sm:p-6">
+  <div class="min-h-screen flex flex-col items-center p-4 sm:p-6 relative">
+    <!-- Overlay de cargando -->
+    <div
+      v-if="isLoading"
+      class="absolute inset-0 bg-black/60 flex flex-col justify-center items-center z-50"
+    >
+      <div class="w-12 h-12 border-4 border-t-transparent border-white rounded-full animate-spin"></div>
+      <p class="text-white mt-3 text-sm sm:text-base">Procesando...</p>
+    </div>
+
     <h1 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-center">
       🧠 Decodificador QR JD Eléctricosss
     </h1>
@@ -16,6 +25,7 @@
         {{ user.name }}
       </option>
     </select>
+
     <div
       class="shadow-lg rounded-xl p-4 sm:p-6 w-full max-w-md sm:max-w-lg text-center"
     >
@@ -33,7 +43,9 @@
       >
         Analizar y Decodificar
       </button>
+
       <div class="p-5" v-if="infoImg">{{ res }}</div>
+
       <div v-if="decodedText" class="mt-6 text-left sm:text-center">
         <h2 class="text-base sm:text-lg font-semibold">Resultado:</h2>
         <p
@@ -61,6 +73,7 @@
         >
           Guardar Datos
         </button>
+
         <button
           v-if="file"
           class="w-full sm:w-auto bg-pink-500 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition"
@@ -91,6 +104,8 @@ const imgRef = ref(null);
 const canvasRef = ref(null);
 const decodedText = ref("");
 const errorMessage = ref("");
+const isLoading = ref(false); // 🟢 NUEVO: estado cargando
+
 const asesor = ref([
   { name: "Seleccione Asesor", code: "" },
   { name: "Dianie", code: "Dianie" },
@@ -101,6 +116,7 @@ const asesor = ref([
   { name: "Nicolas", code: "Nicolas" },
   { name: "William", code: "William" },
 ]);
+
 // === 1️⃣ Cargar archivo ===
 const handleFile = (e) => {
   const f = e.target.files[0];
@@ -117,7 +133,6 @@ const onImageLoaded = () => {
   const canvas = canvasRef.value;
   const ctx = canvas.getContext("2d");
 
-  // Ajustar tamaño base
   const base = 800;
   const scale = Math.max(base / img.naturalWidth, base / img.naturalHeight, 1);
   canvas.width = img.naturalWidth * scale;
@@ -125,14 +140,12 @@ const onImageLoaded = () => {
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-  // === Preprocesamiento de imagen ===
   let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
   let data = imageData.data;
 
-  // Convertir a blanco y negro + mejorar contraste
   for (let i = 0; i < data.length; i += 4) {
     const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-    const contrasted = gray > 128 ? 255 : 0; // binarización simple
+    const contrasted = gray > 128 ? 255 : 0;
     data[i] = data[i + 1] = data[i + 2] = contrasted;
   }
   ctx.putImageData(imageData, 0, 0);
@@ -150,6 +163,7 @@ const processImage = async () => {
   formData.append("image", file.value);
   formData.append("user", selectedUser.value);
 
+  isLoading.value = true; // 🟢 Mostrar cargando
   try {
     const response = await fetch("https://test-back-qr.vercel.app/api/qr/decode-qr", {
       method: "POST",
@@ -168,19 +182,20 @@ const processImage = async () => {
   } catch (err) {
     console.error("Error enviando imagen:", err);
     errorMessage.value = "Error de conexión con el servidor.";
+  } finally {
+    isLoading.value = false; // 🟢 Ocultar cargando
   }
 };
 
-// guardar datos en la db
+// === Guardar texto decodificado ===
 const saveDecodedText = async () => {
-  console.log(selectedUser.value);
   if (!decodedText.value) {
     errorMessage.value = "No hay texto decodificado para guardar.";
     return;
   }
 
+  isLoading.value = true; // 🟢
   try {
-    console.log("📤 Enviando string al backend...");
     const response = await fetch("https://test-back-qr.vercel.app/api/strings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -192,18 +207,18 @@ const saveDecodedText = async () => {
 
     const data = await response.json();
     if (data.success) {
-      alert("datos guardados.");
-      console.log("✅ String guardado correctamente:", data.data);
+      alert("Datos guardados correctamente.");
       res.value = `✅ String guardado:\n${decodedText.value}`;
       infoImg.value = true;
     } else {
-      alert("error al guardar los datos.");
-      console.error("❌ Error al guardar string:", data.error);
+      alert("Error al guardar los datos.");
       errorMessage.value = data.error;
     }
   } catch (err) {
     console.error("⚠️ Error al enviar string:", err);
     errorMessage.value = err.message;
+  } finally {
+    isLoading.value = false; // 🟢
   }
 };
 
@@ -214,21 +229,18 @@ const uploadImage = async () => {
     return;
   }
 
+  isLoading.value = true; // 🟢
   try {
     const formData = new FormData();
-    formData.append("image", file.value); // 👈 debe coincidir con upload.single('image')
+    formData.append("image", file.value);
     formData.append("user", selectedUser.value);
-
-    console.log("📤 Enviando imagen al backend...");
 
     const response = await fetch("https://test-back-qr.vercel.app/api/upload", {
       method: "POST",
       body: formData,
     });
 
-    const text = await response.text(); // leer crudo para debug
-    console.log("📡 Respuesta cruda del backend:", text);
-
+    const text = await response.text();
     let data;
     try {
       data = JSON.parse(text);
@@ -237,20 +249,19 @@ const uploadImage = async () => {
     }
 
     if (data.success) {
-      alert("imagen guardada correctamente.");
-      console.log("✅ Imagen subida correctamente a ImageKit:", data.link);
-      res.value = `✅ Imagen subida correctamente:\n${data.link}`;
+      alert("Imagen guardada correctamente.");
+      res.value = `✅ Imagen subida:\n${data.link}`;
       infoImg.value = true;
     } else {
       alert("Error al guardar la imagen.");
-      console.error("❌ Error en la respuesta del servidor:", data.error);
-      res.value = `❌ Error al subir la imagen:${data.error}`;
+      res.value = `❌ Error al subir la imagen: ${data.error}`;
       infoImg.value = true;
-      throw new Error(data.error || "Error al subir imagen");
     }
   } catch (err) {
     console.error("⚠️ Error al subir imagen:", err);
     errorMessage.value = err.message;
+  } finally {
+    isLoading.value = false; // 🟢
   }
 };
 </script>
