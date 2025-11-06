@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen flex flex-col items-center p-4 sm:p-6">
     <h1 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-center">
-      🧠 Decodificador QR JDEléctricos
+      🧠 Decodificador QR JD Eléctricosss
     </h1>
     <select
       v-model="selectedUser"
