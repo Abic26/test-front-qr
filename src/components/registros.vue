@@ -51,7 +51,7 @@ const fetchRegistros = async () => {
   error.value = "";
 
   try {
-    const res = await fetch("http://localhost:5000/api/strings");
+    const res = await fetch("https://test-back-1mgdeyf27-abic26s-projects.vercel.app/api/strings");
     const data = await res.json();
 
     if (data.success) {
