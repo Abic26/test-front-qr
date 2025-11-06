@@ -10,7 +10,7 @@
     </div>
 
     <h1 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-center">
-      🧠 Decodificador QR JD Eléctricosss
+      🧠 Decodificador QR JD Eléctricos
     </h1>
     <select
       v-model="selectedUser"
