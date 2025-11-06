@@ -151,7 +151,7 @@ const processImage = async () => {
   formData.append("user", selectedUser.value);
 
   try {
-    const response = await fetch("https://test-back-1mgdeyf27-abic26s-projects.vercel.app/api/qr/decode-qr", {
+    const response = await fetch("https://test-back-qr.vercel.app/api/qr/decode-qr", {
       method: "POST",
       body: formData,
     });
@@ -181,7 +181,7 @@ const saveDecodedText = async () => {
 
   try {
     console.log("📤 Enviando string al backend...");
-    const response = await fetch("https://test-back-1mgdeyf27-abic26s-projects.vercel.app/api/strings", {
+    const response = await fetch("https://test-back-qr.vercel.app/api/strings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -221,7 +221,7 @@ const uploadImage = async () => {
 
     console.log("📤 Enviando imagen al backend...");
 
-    const response = await fetch("https://test-back-1mgdeyf27-abic26s-projects.vercel.app/api/upload", {
+    const response = await fetch("https://test-back-qr.vercel.app/api/upload", {
       method: "POST",
       body: formData,
     });
